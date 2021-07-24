@@ -257,5 +257,36 @@ namespace DataEditorUE4.Utilities
             }
             return byteData;
         }
+
+        public static void UpdateUAssetToMatchFileSizeOfUexp(byte[] oldUexpBytes, byte[] newUexpBytes, string uassetPath)
+        {
+            byte[] countOfOldUexpBytes = BitConverter.GetBytes((long)(oldUexpBytes.Length - 4));
+            byte[] numOfNewUexpBytes = BitConverter.GetBytes((long)(newUexpBytes.Length - 4));
+
+            var data = File.ReadAllBytes(uassetPath);
+            var replacementIndex = FindSubArrayInLargerArray(data, countOfOldUexpBytes);
+            UpdateBytesAtOffset(numOfNewUexpBytes, data, replacementIndex);
+            File.WriteAllBytes(uassetPath, data);
+        }
+
+        public static int FindSubArrayInLargerArray(byte[] haystack, byte[] needle)
+        {
+            // iterate backwards, stop if the rest of the array is shorter than needle (i >= needle.Length)
+            for (var i = haystack.Length - 1; i >= needle.Length - 1; i--)
+            {
+                var found = true;
+                // also iterate backwards through needle, stop if elements do not match (!found)
+                for (var j = needle.Length - 1; j >= 0 && found; j--)
+                {
+                    // compare needle's element with corresponding element of haystack
+                    found = haystack[i - (needle.Length - 1 - j)] == needle[j];
+                }
+                if (found)
+                    // result was found, i is now the index of the last found element, so subtract needle's length - 1
+                    return i - (needle.Length - 1);
+            }
+            // not found, return -1
+            return -1;
+        }
     }
 }

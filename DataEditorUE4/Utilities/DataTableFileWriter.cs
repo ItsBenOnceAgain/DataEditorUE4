@@ -13,6 +13,8 @@ namespace DataEditorUE4.Utilities
         {
             string uassetWritePath = uassetOverride ?? table.SourceUassetPath;
             string uexpWritePath = uexpOverride ?? table.SourceUexpPath;
+            var oldUexpBytes = File.ReadAllBytes(table.SourceUexpPath);
+
             File.WriteAllBytes(uassetWritePath, File.ReadAllBytes(table.SourceUassetPath));
             List<byte> bytesToWrite = new List<byte>();
             bytesToWrite.AddRange(table.HeaderBytes);
@@ -34,6 +36,7 @@ namespace DataEditorUE4.Utilities
 
             bytesToWrite.AddRange(table.FooterBytes);
             File.WriteAllBytes(uexpWritePath, bytesToWrite.ToArray());
+            CommonUtilities.UpdateUAssetToMatchFileSizeOfUexp(oldUexpBytes, bytesToWrite.ToArray(), uassetWritePath);
         }
 
         public static byte[] GetBytesFromObject(UEDataTableObject dataObject, Dictionary<int, string> uassetStrings, string uassetPath)
