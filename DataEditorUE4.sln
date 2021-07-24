@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataEditorUE4", "DataEditorUE4\DataEditorUE4.csproj", "{373BBE73-0B0E-4126-BEE2-34AAE652A68F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UE4Tests", "UE4Tests\UE4Tests.csproj", "{ED3F13DD-E76E-44F4-B852-678DDAF604D0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{373BBE73-0B0E-4126-BEE2-34AAE652A68F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{373BBE73-0B0E-4126-BEE2-34AAE652A68F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{373BBE73-0B0E-4126-BEE2-34AAE652A68F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{373BBE73-0B0E-4126-BEE2-34AAE652A68F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED3F13DD-E76E-44F4-B852-678DDAF604D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED3F13DD-E76E-44F4-B852-678DDAF604D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED3F13DD-E76E-44F4-B852-678DDAF604D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED3F13DD-E76E-44F4-B852-678DDAF604D0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {86E904D6-4A7F-441B-BAB0-D336F37587B5}
+	EndGlobalSection
+EndGlobal
