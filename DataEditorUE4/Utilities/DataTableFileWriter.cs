@@ -36,7 +36,11 @@ namespace DataEditorUE4.Utilities
 
             bytesToWrite.AddRange(table.FooterBytes);
             File.WriteAllBytes(uexpWritePath, bytesToWrite.ToArray());
-            CommonUtilities.UpdateUAssetToMatchFileSizeOfUexp(oldUexpBytes, bytesToWrite.ToArray(), uassetWritePath);
+            
+            if(table.Rows.Count > 0)
+            {
+                CommonUtilities.UpdateUAssetToMatchFileSizeOfUexp(oldUexpBytes, bytesToWrite.ToArray(), uassetWritePath);
+            }
         }
 
         public static byte[] GetBytesFromObject(UEDataTableObject dataObject, Dictionary<int, string> uassetStrings, string uassetPath)
@@ -234,9 +238,9 @@ namespace DataEditorUE4.Utilities
         {
             List<byte> bytes = new List<byte>();
             string cellText = (string)cell.Value;
-            cellText = cellText.Trim('\0') + "\0";
             if (cellText != "")
             {
+                cellText = cellText.Trim('\0') + "\0";
                 int textLength = cellText.Length;
                 if (cell.TextIsUnicode)
                 {
