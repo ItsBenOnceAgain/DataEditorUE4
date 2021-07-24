@@ -33,8 +33,8 @@ namespace UE4Tests
 
         private static IEnumerable GetParseFileNames()
         {
-            var fileNames = GetFileNames(@"C:\Users\Ben\Desktop\OctopathTableParseTest\");
-            foreach(var filePair in fileNames)
+            var fileNames = GetFileNames(@"..\..\..\..\TestFiles\OctopathTableParseTest\");
+            foreach (var filePair in fileNames)
             {
                 string baseFileName = filePair.Item1.Split(@"\").Last().Replace(".uasset", "");
                 var data = new TestCaseData(filePair).SetName($"TestParse{baseFileName}");
@@ -44,7 +44,7 @@ namespace UE4Tests
 
         private static IEnumerable GetWriteFileNames()
         {
-            var fileNamesParse = GetFileNames(@"C:\Users\Ben\Desktop\OctopathTableParseTest\");
+            var fileNamesParse = GetFileNames(@"..\..\..\..\TestFiles\OctopathTableParseTest\");
             foreach (var filePair in fileNamesParse)
             {
                 string[] pathPieces = filePair.Item1.Split(@"\");
