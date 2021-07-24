@@ -214,6 +214,7 @@ namespace DataEditorUE4.Utilities
             List<byte> bytes = new List<byte>();
             string cellString = (string)cell.Value;
             int stringLength = cellString.Length;
+            cellString = cellString.Trim('\0') + "\0";
             if (cell.TextIsUnicode)
             {
                 stringLength *= -1;
@@ -230,6 +231,7 @@ namespace DataEditorUE4.Utilities
         {
             List<byte> bytes = new List<byte>();
             string cellText = (string)cell.Value;
+            cellText = cellText.Trim('\0') + "\0";
             if (cellText != "")
             {
                 int textLength = cellText.Length;
