@@ -33,7 +33,7 @@ namespace DataEditorUE4.Utilities
             }
             else
             {
-                tableHeaderBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix("None", uassetStrings, uassetPath, uassetPath);
+                tableHeaderBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix("None", ref uassetStrings, uassetPath, uassetPath);
                 tableFooterBytes = CommonUtilities.GetSubArray(allBytes, 8, allBytes.Length - 8);
             }
 

@@ -230,7 +230,7 @@ namespace DataEditorUE4.Utilities
             return finalArray;
         }
 
-        public static byte[] GetBytesFromStringWithPossibleSuffix(string stringWithPossibleSuffix, Dictionary<int, string> uassetStrings, string uassetPath, string modUassetPath)
+        public static byte[] GetBytesFromStringWithPossibleSuffix(string stringWithPossibleSuffix, ref Dictionary<int, string> uassetStrings, string uassetPath, string modUassetPath)
         {
             string[] data = stringWithPossibleSuffix.Split('_');
             List<string> prefixDataList = data.ToList();

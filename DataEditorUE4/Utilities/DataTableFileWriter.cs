@@ -29,7 +29,7 @@ namespace DataEditorUE4.Utilities
 
             foreach(var row in table.Rows)
             {
-                bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix(row.Key, uassetStrings, uassetWritePath, uassetWritePath));
+                bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix(row.Key, ref uassetStrings, uassetWritePath, uassetWritePath));
                 byte[] objectBytes = GetBytesFromObject(row.Value, uassetStrings, uassetWritePath);
                 bytesToWrite.AddRange(objectBytes);
             }
@@ -50,7 +50,7 @@ namespace DataEditorUE4.Utilities
             {
                 case UE4ObjectType.Object:
                     bytes.AddRange(GetBytesFromObjectCells(dataObject, uassetStrings, uassetPath));
-                    bytes.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix("None", uassetStrings, uassetPath, uassetPath));
+                    bytes.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix("None", ref uassetStrings, uassetPath, uassetPath));
                     break;
                 case UE4ObjectType.LinearColor:
                 case UE4ObjectType.Vector4:
@@ -186,7 +186,7 @@ namespace DataEditorUE4.Utilities
         public static byte[] GetInternalBytesFromEnumNameCell(UEDataTableCell cell, Dictionary<int, string> uassetStrings, string uassetPath)
         {
             List<byte> bytes = new List<byte>();
-            byte[] uassetBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix(cell.Value, uassetStrings, uassetPath, uassetPath);
+            byte[] uassetBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix(cell.Value, ref uassetStrings, uassetPath, uassetPath);
             bytes.AddRange(uassetBytes);
             return bytes.ToArray();
         }
@@ -210,7 +210,7 @@ namespace DataEditorUE4.Utilities
         public static byte[] GetInternalBytesFromSoftObjectCell(UEDataTableCell cell, Dictionary<int, string> uassetStrings, string uassetPath)
         {
             List<byte> bytes = new List<byte>();
-            byte[] softObjectBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix(cell.Value, uassetStrings, uassetPath, uassetPath);
+            byte[] softObjectBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix(cell.Value, ref uassetStrings, uassetPath, uassetPath);
             bytes.AddRange(softObjectBytes);
             bytes.AddRange(new byte[] { 0, 0, 0, 0 });
             return bytes.ToArray();
