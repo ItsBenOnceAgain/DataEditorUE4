@@ -10,15 +10,12 @@ namespace UE4Tests
 {
     public class UE4UnitTests
     {
-
-        [Test]
         [TestCaseSource(nameof(GetParseFileNames))]
         public void TestParse(Tuple<string, string> fileNames)
         {
             DataTableParser.CreateDataTable(fileNames.Item1, (fileNames.Item2));
         }
 
-        [Test]
         [TestCaseSource(nameof(GetWriteFileNames))]
         public void TestWrite(Tuple<Tuple<string, string>, Tuple<string, string>> testData)
         {

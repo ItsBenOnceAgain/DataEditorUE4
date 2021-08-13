@@ -145,6 +145,87 @@ namespace DataEditorUE4.Utilities
             File.WriteAllBytes(uassetPathWrite, finalBytes);
         }
 
+        public static void FindAndReplaceStringInUasset(string uassetPathRead, string uassetPathWrite, string stringToFind, string stringToReplace, bool replaceHash = true)
+        {
+            byte[] allBytes = File.ReadAllBytes(uassetPathRead);
+            int byteCountDifference = 0;
+            int numberOfEntries = BitConverter.ToInt32(allBytes, Constants.UassetEntryCountOffset);
+            int currentOffset = 0xc1;
+            for (int i = 0; i < numberOfEntries; i++)
+            {
+                int lengthOffset = currentOffset;
+                int currentStringLength = BitConverter.ToInt32(allBytes, currentOffset);
+                if (currentStringLength < 0)
+                {
+                    currentStringLength *= -2;
+                }
+
+                currentOffset += 4;
+                string stringToCompare = Encoding.ASCII.GetString(allBytes, currentOffset, currentStringLength);
+
+                if (stringToCompare.Contains(stringToFind))
+                {
+                    string finalString = stringToCompare.Replace(stringToFind, stringToReplace);
+                    UpdateBytesAtOffset(BitConverter.GetBytes(finalString.Length), allBytes, lengthOffset);
+                    List<byte> allBytesList = allBytes.ToList();
+                    allBytesList.RemoveRange(currentOffset, stringToCompare.Length);
+                    allBytesList.InsertRange(currentOffset, Encoding.ASCII.GetBytes(finalString));
+                    currentOffset += finalString.Length;
+                    var addedHashBytes = GetByteHash(finalString);
+
+                    if (replaceHash)
+                    {
+                        allBytesList.RemoveRange(currentOffset, 4);
+                        allBytesList.InsertRange(currentOffset, addedHashBytes);
+                    }
+                    allBytes = allBytesList.ToArray();
+                    currentOffset += 4;
+                    byteCountDifference += (stringToReplace.Length - stringToFind.Length);
+                }
+                else
+                {
+                    currentOffset += currentStringLength + 4;
+                }
+            }
+
+            byte[] finalBytes = allBytes;
+
+            //Patching metadata
+            byte[] originalBytes = finalBytes.Skip(0x18).Take(4).ToArray();
+            byte[] editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0x18);
+
+            originalBytes = finalBytes.Skip(0x3d).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0x3d);
+
+            originalBytes = finalBytes.Skip(0x45).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0x45);
+
+            originalBytes = finalBytes.Skip(0x49).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0x49);
+
+            originalBytes = finalBytes.Skip(0xa5).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0xa5);
+
+            originalBytes = finalBytes.Skip(0xa9).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0xa9);
+
+            originalBytes = finalBytes.Skip(0xbd).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, 0xbd);
+
+            originalBytes = finalBytes.Skip(finalBytes.Length - 0x58).Take(4).ToArray();
+            editedBytes = BitConverter.GetBytes(BitConverter.ToInt32(originalBytes, 0) + byteCountDifference);
+            UpdateBytesAtOffset(editedBytes, finalBytes, finalBytes.Length - 0x58);
+
+            File.WriteAllBytes(uassetPathWrite, finalBytes);
+        }
+
         private static void UpdateBytesAtOffset(byte[] updateBytes, byte[] allBytes, int currentOffset)
         {
             for (int i = 0; i < updateBytes.Length; i++)
