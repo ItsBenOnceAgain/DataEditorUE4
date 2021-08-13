@@ -320,7 +320,13 @@ namespace DataEditorUE4.Utilities
             string prefix = string.Join("_", prefixData);
 
             byte[] byteData = new byte[8];
-            if (!uassetStrings.ContainsValue(stringWithPossibleSuffix) && !uassetStrings.ContainsValue(prefix))
+            string suffix = data[data.Length - 1];
+            bool suffixIsNumeric = int.TryParse(suffix, out int res);
+
+            bool needToAddString = (!uassetStrings.ContainsValue(stringWithPossibleSuffix) && !uassetStrings.ContainsValue(prefix)) || 
+                (!uassetStrings.ContainsValue(stringWithPossibleSuffix) && uassetStrings.ContainsValue(prefix) && !suffixIsNumeric);
+
+            if (needToAddString)
             {
                 AddStringToUasset(uassetPath, modUassetPath, stringWithPossibleSuffix);
                 uassetStrings = ParseUAssetFile(modUassetPath);
