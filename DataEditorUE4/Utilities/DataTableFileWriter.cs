@@ -9,7 +9,7 @@ namespace DataEditorUE4.Utilities
 {
     public static class DataTableFileWriter
     {
-        public const int MAX_ANSI_CODE = 255;
+        public const int MAX_ASCII_CODE = 127;
         public static void WriteTableToFile(UEDataTable table, string uassetOverride = null, string uexpOverride = null)
         {
             string uassetWritePath = uassetOverride ?? table.SourceUassetPath;
@@ -223,7 +223,7 @@ namespace DataEditorUE4.Utilities
             string cellString = (string)cell.Value;
             int stringLength = cellString.Length;
             cellString = cellString.Trim('\0') + "\0";
-            cell.TextIsUnicode = cellString.Any(c => c > MAX_ANSI_CODE);
+            cell.TextIsUnicode = cellString.Any(c => c > MAX_ASCII_CODE);
             if (cell.TextIsUnicode)
             {
                 stringLength *= -1;
@@ -244,7 +244,7 @@ namespace DataEditorUE4.Utilities
             {
                 cellText = cellText.Trim('\0') + "\0";
                 int textLength = cellText.Length;
-                cell.TextIsUnicode = cellText.Any(c => c > MAX_ANSI_CODE);
+                cell.TextIsUnicode = cellText.Any(c => c > MAX_ASCII_CODE);
                 if (cell.TextIsUnicode)
                 {
                     textLength *= -1;
