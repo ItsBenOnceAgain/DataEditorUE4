@@ -51,7 +51,16 @@ namespace DataEditorUE4.Utilities
 
         public static string ParseUAssetStringWithPossibleSuffix(byte[] mainArray, int currentOffset, Dictionary<int, string> uassetStrings)
         {
-            string stringValue = uassetStrings[BitConverter.ToInt32(mainArray, currentOffset)];
+            string stringValue = null;
+            int uassetKey = BitConverter.ToInt32(mainArray, currentOffset);
+            try
+            {
+                stringValue = uassetStrings[uassetKey];
+            }
+            catch(KeyNotFoundException)
+            {
+                throw new ArgumentException($"Failed to parse uasset string! The key given was {uassetKey} but no such key exists in the uasset list.");
+            }
             currentOffset += 4;
             if (BitConverter.ToInt32(mainArray, currentOffset) != 0)
             {

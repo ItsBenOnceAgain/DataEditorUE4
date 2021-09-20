@@ -11,6 +11,7 @@ namespace DataEditorUE4.Models
         ByteProperty,
         FloatProperty,
         IntProperty,
+        UInt32Property,
         NameProperty,
         TextProperty,
         StrProperty,

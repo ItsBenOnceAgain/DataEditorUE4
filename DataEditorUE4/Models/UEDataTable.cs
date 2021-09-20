@@ -14,6 +14,7 @@ namespace DataEditorUE4.Models
         public string SourceUexpPath { get; set; }
         public byte[] HeaderBytes { get; set; }
         public byte[] FooterBytes { get; set; }
+        public bool IsAsset { get; set; }
 
         public UEDataTable(Dictionary<string, UEDataTableObject> rows, string name, byte[] headerBytes, byte[] footerBytes)
         {

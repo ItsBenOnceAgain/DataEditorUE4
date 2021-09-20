@@ -16,6 +16,12 @@ namespace UE4Tests
             DataTableParser.CreateDataTable(fileNames.Item1, (fileNames.Item2));
         }
 
+        [TestCaseSource(nameof(GetParseBDFileNames))]
+        public void TestParseBDII(Tuple<string, string> fileNames)
+        {
+            DataTableParser.CreateDataTable(fileNames.Item1, (fileNames.Item2));
+        }
+
         [TestCaseSource(nameof(GetWriteFileNames))]
         public void TestWrite(Tuple<Tuple<string, string>, Tuple<string, string>> testData)
         {
@@ -28,13 +34,60 @@ namespace UE4Tests
             CollectionAssert.AreEqual(originalBytes, savedBytes);
         }
 
+        [TestCaseSource(nameof(GetWriteBDFileNames))]
+        public void TestWriteBDII(Tuple<Tuple<string, string>, Tuple<string, string>> testData)
+        {
+            var table = DataTableParser.CreateDataTable(testData.Item1.Item1, testData.Item1.Item2);
+            DataTableFileWriter.WriteTableToFile(table, testData.Item2.Item1, testData.Item2.Item2);
+
+            byte[] originalBytes = File.ReadAllBytes(testData.Item1.Item2);
+            byte[] savedBytes = File.ReadAllBytes(testData.Item2.Item2);
+
+            CollectionAssert.AreEqual(originalBytes, savedBytes);
+        }
+
+        private static IEnumerable GetParseBDFileNames()
+        {
+            var fileNames = GetFileNames(@"..\..\..\..\TestFiles\BravelyDefaultIIParseTest\");
+            foreach (var filePair in fileNames)
+            {
+                string baseFileName = filePair.Item1.Split(@"\").Last().Replace(".uasset", "");
+                var data = new TestCaseData(filePair).SetName($"BDIITestParse{baseFileName}");
+                yield return data;
+            }
+        }
+
         private static IEnumerable GetParseFileNames()
         {
             var fileNames = GetFileNames(@"..\..\..\..\TestFiles\OctopathTableParseTest\");
             foreach (var filePair in fileNames)
             {
                 string baseFileName = filePair.Item1.Split(@"\").Last().Replace(".uasset", "");
-                var data = new TestCaseData(filePair).SetName($"TestParse{baseFileName}");
+                var data = new TestCaseData(filePair).SetName($"OctopathTestParse{baseFileName}");
+                yield return data;
+            }
+        }
+
+        private static IEnumerable GetWriteBDFileNames()
+        {
+            var fileNamesParse = GetFileNames(@"..\..\..\..\TestFiles\BravelyDefaultIIParseTest\");
+            foreach (var filePair in fileNamesParse)
+            {
+                string[] pathPieces = filePair.Item1.Split(@"\");
+                string baseFileName = pathPieces.Last().Replace(".uasset", "");
+
+                for (int i = 0; i < pathPieces.Length; i++)
+                {
+                    if (pathPieces[i] == "BravelyDefaultIIParseTest")
+                    {
+                        pathPieces[i] = "BravelyDefaultIIWriteTest";
+                    }
+                }
+                string newUasset = string.Join(@"\", pathPieces);
+                string newUexp = newUasset.Replace(".uasset", ".uexp");
+                var testData = new Tuple<Tuple<string, string>, Tuple<string, string>>(filePair, new Tuple<string, string>(newUasset, newUexp));
+
+                var data = new TestCaseData(testData).SetName($"BDIITestWrite{baseFileName}");
                 yield return data;
             }
         }
@@ -58,7 +111,7 @@ namespace UE4Tests
                 string newUexp = newUasset.Replace(".uasset", ".uexp");
                 var testData = new Tuple<Tuple<string, string>, Tuple<string, string>>(filePair, new Tuple<string, string>(newUasset, newUexp));
 
-                var data = new TestCaseData(testData).SetName($"TestWrite{baseFileName}");
+                var data = new TestCaseData(testData).SetName($"OctopathTestWrite{baseFileName}");
                 yield return data;
             }
         }

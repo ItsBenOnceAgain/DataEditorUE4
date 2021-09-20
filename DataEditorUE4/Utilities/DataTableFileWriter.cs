@@ -30,7 +30,15 @@ namespace DataEditorUE4.Utilities
 
             foreach(var row in table.Rows)
             {
-                bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix(row.Key, ref uassetStrings, uassetWritePath, uassetWritePath));
+                if (table.IsAsset)
+                {
+                    bytesToWrite.AddRange(BitConverter.GetBytes(int.Parse(row.Key)));
+                }
+                else
+                {
+                    bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix(row.Key, ref uassetStrings, uassetWritePath, uassetWritePath));
+                }
+                
                 byte[] objectBytes = GetBytesFromObject(row.Value, uassetStrings, uassetWritePath);
                 bytesToWrite.AddRange(objectBytes);
             }
@@ -102,6 +110,9 @@ namespace DataEditorUE4.Utilities
                     case UE4PropertyType.ObjectProperty:
                         bytes.AddRange(GetInternalBytesFromIntCell(cell));
                         break;
+                    case UE4PropertyType.UInt32Property:
+                        bytes.AddRange(GetInternalBytesFromUInt32Cell(cell));
+                        break;
                     case UE4PropertyType.SoftObjectProperty:
                         bytes.AddRange(GetInternalBytesFromSoftObjectCell(cell, uassetStrings, uassetPath));
                         break;
@@ -124,12 +135,12 @@ namespace DataEditorUE4.Utilities
             List<byte> bytes = new List<byte>();
             var itemList = (List<UEDataTableCell>)cell.Value;
             bytes.AddRange(BitConverter.GetBytes(itemList.Count));
+            if(cell.StructArrayExtraBytes != null)
+            {
+                bytes.AddRange(cell.StructArrayExtraBytes);
+            }
             if(itemList.Count > 0)
             {
-                if (itemList.First().Column.ColumnType == UE4PropertyType.StructProperty)
-                {
-                    bytes.AddRange(itemList.First().HeaderBytes);
-                }
                 for (int i = 0; i < itemList.Count; i++)
                 {
                     var currentArrayCell = itemList[i];
@@ -147,6 +158,9 @@ namespace DataEditorUE4.Utilities
                         case UE4PropertyType.IntProperty:
                         case UE4PropertyType.ObjectProperty:
                             bytes.AddRange(GetInternalBytesFromIntCell(currentArrayCell));
+                            break;
+                        case UE4PropertyType.UInt32Property:
+                            bytes.AddRange(GetInternalBytesFromUInt32Cell(currentArrayCell));
                             break;
                         case UE4PropertyType.ByteProperty:
                         case UE4PropertyType.NameProperty:
@@ -205,6 +219,14 @@ namespace DataEditorUE4.Utilities
             List<byte> bytes = new List<byte>();
             byte[] intBytes = BitConverter.GetBytes(int.Parse(((object)cell.Value).ToString()));
             bytes.AddRange(intBytes);
+            return bytes.ToArray();
+        }
+
+        public static byte[] GetInternalBytesFromUInt32Cell(UEDataTableCell cell)
+        {
+            List<byte> bytes = new List<byte>();
+            byte[] uintBytes = BitConverter.GetBytes(uint.Parse(((object)cell.Value).ToString()));
+            bytes.AddRange(uintBytes);
             return bytes.ToArray();
         }
 

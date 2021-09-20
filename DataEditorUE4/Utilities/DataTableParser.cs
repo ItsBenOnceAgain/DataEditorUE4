@@ -18,7 +18,9 @@ namespace DataEditorUE4.Utilities
             Dictionary<string, UEDataTableObject> rows = new Dictionary<string, UEDataTableObject>();
             byte[] tableHeaderBytes;
             byte[] tableFooterBytes;
-            if (CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, 0, uassetStrings) != "None")
+            var fileDataType = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, 0, uassetStrings);
+            bool isAsset = false;
+            if (fileDataType == "RowStruct")
             {
                 tableHeaderBytes = CommonUtilities.GetSubArray(allBytes, 0, Constants.UexpEntryCountOffset);
                 int numOfEntries = BitConverter.ToInt32(allBytes, Constants.UexpEntryCountOffset);
@@ -31,16 +33,33 @@ namespace DataEditorUE4.Utilities
                 }
                 tableFooterBytes = CommonUtilities.GetSubArray(allBytes, currentOffset, 4);
             }
-            else
+            else if(fileDataType == "None")
             {
                 tableHeaderBytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix("None", ref uassetStrings, uassetPath, uassetPath);
                 tableFooterBytes = CommonUtilities.GetSubArray(allBytes, 8, allBytes.Length - 8);
+            }
+            else
+            {
+                //BDII Asset File
+                isAsset = true;
+                tableHeaderBytes = CommonUtilities.GetSubArray(allBytes, 0, Constants.AssetUexpEntryCountOffset);
+                int numOfEntries = BitConverter.ToInt32(allBytes, Constants.AssetUexpEntryCountOffset);
+                int currentOffset = Constants.AssetUexpListStartOffset;
+                for (int i = 0; i < numOfEntries; i++)
+                {
+                    string rowKey = BitConverter.ToInt32(allBytes, currentOffset).ToString();
+                    currentOffset += 0x4;
+                    rows.Add(rowKey, ParseSingleDataObject(uassetStrings, allBytes, ref currentOffset));
+                }
+                int remainingBytes = allBytes.Length - currentOffset;
+                tableFooterBytes = CommonUtilities.GetSubArray(allBytes, currentOffset, remainingBytes);
             }
 
             string baseTableName = uassetPath.Split(@"\").Last().Replace(".uasset", "");
             var table = new UEDataTable(rows, baseTableName, tableHeaderBytes, tableFooterBytes);
             table.SourceUassetPath = uassetPath;
             table.SourceUexpPath = uexpPath;
+            table.IsAsset = isAsset;
 
             return table;
         }
@@ -100,6 +119,9 @@ namespace DataEditorUE4.Utilities
                 case Constants.IntPropertyString:
                     cell = CreateIntCell(columnName, allBytes, ref currentOffset, cellStartOffset);
                     break;
+                case Constants.UInt32PropertyString:
+                    cell = CreateUInt32Cell(columnName, allBytes, ref currentOffset, cellStartOffset);
+                    break;
                 case Constants.NamePropertyString:
                     cell = CreateNameCell(columnName, uassetStrings, allBytes, ref currentOffset, cellStartOffset);
                     break;
@@ -157,6 +179,12 @@ namespace DataEditorUE4.Utilities
                             int intValue = BitConverter.ToInt32(allBytes, currentOffset);
                             var intCell = new UEDataTableCell(new UEDataTableColumn(columnName, UE4PropertyType.IntProperty), intValue);
                             list.Add(intCell);
+                            currentOffset += 0x04;
+                            break;
+                        case Constants.UInt32PropertyString:
+                            uint uintValue = BitConverter.ToUInt32(allBytes, currentOffset);
+                            var uintCell = new UEDataTableCell(new UEDataTableColumn(columnName, UE4PropertyType.UInt32Property), uintValue);
+                            list.Add(uintCell);
                             currentOffset += 0x04;
                             break;
                         case Constants.ObjectPropertyString:
@@ -230,6 +258,7 @@ namespace DataEditorUE4.Utilities
             currentOffset += 0x19;
 
             byte[] headerBytes = CommonUtilities.GetSubArray(allBytes, cellStartOffset, currentOffset - cellStartOffset);
+
             List<UEDataTableCell> arrayList = new List<UEDataTableCell>();
             for(int i = 0; i < numOfEntries; i++)
             {
@@ -238,6 +267,7 @@ namespace DataEditorUE4.Utilities
                 arrayList.Add(internalObjectCell);
             }
             var cell = new UEDataTableCell(column, arrayList, mainArrayHeaderBytes);
+            cell.StructArrayExtraBytes = headerBytes;
             return cell;
         }
 
@@ -322,6 +352,19 @@ namespace DataEditorUE4.Utilities
             return cell;
         }
 
+        public static UEDataTableCell CreateUInt32Cell(string columnName, byte[] allBytes, ref int currentOffset, int cellStartOffset)
+        {
+            UEDataTableColumn column = new UEDataTableColumn(columnName, UE4PropertyType.UInt32Property);
+            currentOffset += 0x9;
+
+            byte[] headerBytes = CommonUtilities.GetSubArray(allBytes, cellStartOffset, currentOffset - cellStartOffset);
+
+            uint value = BitConverter.ToUInt32(allBytes, currentOffset);
+            currentOffset += 0x4;
+            var cell = new UEDataTableCell(column, value, headerBytes);
+            return cell;
+        }
+
         public static UEDataTableCell CreateFloatCell(string columnName, byte[] allBytes, ref int currentOffset, int cellStartOffset)
         {
             UEDataTableColumn column = new UEDataTableColumn(columnName, UE4PropertyType.FloatProperty);
@@ -353,12 +396,22 @@ namespace DataEditorUE4.Utilities
             bool textIsUnicode = false;
             UEDataTableColumn column = new UEDataTableColumn(columnName, UE4PropertyType.TextProperty);
             int textPropertyByteLength = BitConverter.ToInt32(allBytes, currentOffset);
+            string textNamespace = "";
             string key = "";
             string value = "";
             byte[] headerBytes;
-            if (textPropertyByteLength > 5)
+            currentOffset += 0x0d;
+            byte emptyByte = allBytes[currentOffset];
+            if (emptyByte != 0xff)
             {
-                currentOffset += 0x12;
+                currentOffset += 0x01;
+                int namespaceSize = BitConverter.ToInt32(allBytes, currentOffset);
+                currentOffset += 0x04;
+                if(namespaceSize > 0)
+                {
+                    textNamespace = Encoding.UTF8.GetString(allBytes, currentOffset, namespaceSize);
+                    currentOffset += namespaceSize;
+                }
                 int keySize = BitConverter.ToInt32(allBytes, currentOffset);
                 currentOffset += 0x04;
                 key = Encoding.UTF8.GetString(allBytes, currentOffset, keySize);
@@ -383,7 +436,7 @@ namespace DataEditorUE4.Utilities
             }
             else
             {
-                currentOffset += 0x09 + textPropertyByteLength;
+                currentOffset += textPropertyByteLength - 0x04;
                 headerBytes = CommonUtilities.GetSubArray(allBytes, cellStartOffset, currentOffset - cellStartOffset);
             }
             //var cell = new UEDataTableCell(column, new { Key = key, Value = value});
