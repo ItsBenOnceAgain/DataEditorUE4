@@ -15,7 +15,7 @@ namespace DataEditorUE4.Utilities
         {
             Dictionary<int, string> uassetStrings = CommonUtilities.ParseUAssetFile(uassetPath);
             byte[] allBytes = File.ReadAllBytes(uexpPath);
-            Dictionary<string, UEDataTableObject> rows = new Dictionary<string, UEDataTableObject>();
+            Dictionary<DataRowKey, UEDataTableObject> rows = new Dictionary<DataRowKey, UEDataTableObject>();
             byte[] tableHeaderBytes;
             byte[] tableFooterBytes;
             var fileDataType = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, 0, uassetStrings);
@@ -27,7 +27,12 @@ namespace DataEditorUE4.Utilities
                 int currentOffset = Constants.UexpListStartOffset;
                 for (int i = 0; i < numOfEntries; i++)
                 {
-                    string rowKey = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, currentOffset, uassetStrings);
+                    string rowKeyData = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, currentOffset, uassetStrings);
+                    var rowKey = new DataRowKey()
+                    {
+                        DataType = UE4PropertyType.NameProperty,
+                        KeyData = rowKeyData
+                    };
                     currentOffset += 0x8;
                     rows.Add(rowKey, ParseSingleDataObject(uassetStrings, allBytes, ref currentOffset));
                 }
@@ -40,15 +45,21 @@ namespace DataEditorUE4.Utilities
             }
             else
             {
-                //BDII Asset File
                 isAsset = true;
                 tableHeaderBytes = CommonUtilities.GetSubArray(allBytes, 0, Constants.AssetUexpEntryCountOffset);
                 int numOfEntries = BitConverter.ToInt32(allBytes, Constants.AssetUexpEntryCountOffset);
                 int currentOffset = Constants.AssetUexpListStartOffset;
+                //FIND KEY TYPE
+                var propString = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, Constants.AssetKeyPropertyTypeOffset, uassetStrings);
+                UE4PropertyType keyType = GetKeyPropertyTypeFromString(propString);
                 for (int i = 0; i < numOfEntries; i++)
                 {
-                    string rowKey = BitConverter.ToInt32(allBytes, currentOffset).ToString();
-                    currentOffset += 0x4;
+                    var rowKeyDataValue = ParseRowKey(keyType, allBytes, ref currentOffset, uassetStrings);
+                    var rowKey = new DataRowKey()
+                    {
+                        DataType = keyType,
+                        KeyData = rowKeyDataValue
+                    };
                     rows.Add(rowKey, ParseSingleDataObject(uassetStrings, allBytes, ref currentOffset));
                 }
                 int remainingBytes = allBytes.Length - currentOffset;
@@ -62,6 +73,62 @@ namespace DataEditorUE4.Utilities
             table.IsAsset = isAsset;
 
             return table;
+        }
+
+        public static UE4PropertyType GetKeyPropertyTypeFromString(string propertyString)
+        {
+            UE4PropertyType propType;
+            switch (propertyString)
+            {
+                case Constants.IntPropertyString:
+                    propType = UE4PropertyType.IntProperty;
+                    break;
+                case Constants.StrPropertyString:
+                    propType = UE4PropertyType.StrProperty;
+                    break;
+                case Constants.EnumPropertyString:
+                    propType = UE4PropertyType.EnumProperty;
+                    break;
+                case Constants.NamePropertyString:
+                    propType = UE4PropertyType.NameProperty;
+                    break;
+                default:
+                    throw new ArgumentException($"This program currently doesn't support keys of type {propertyString}");
+            }
+            return propType;
+        }
+
+        public static dynamic ParseRowKey(UE4PropertyType propertyType, byte[] allBytes, ref int currentOffset, Dictionary<int, string> uassetStrings)
+        {
+            dynamic returnVal;
+            switch (propertyType)
+            {
+                case UE4PropertyType.IntProperty:
+                    returnVal = BitConverter.ToInt32(allBytes, currentOffset);
+                    currentOffset += 0x04;
+                    break;
+                case UE4PropertyType.NameProperty:
+                case UE4PropertyType.EnumProperty:
+                    returnVal = CommonUtilities.ParseUAssetStringWithPossibleSuffix(allBytes, currentOffset, uassetStrings);
+                    currentOffset += 0x08;
+                    break;
+                case UE4PropertyType.StrProperty:
+                    int stringLength = BitConverter.ToInt32(allBytes, currentOffset);
+                    currentOffset += 0x04;
+                    int trueStringLength = stringLength;
+                    bool isUnicode = false;
+                    if(stringLength < 0)
+                    {
+                        isUnicode = true;
+                        trueStringLength = stringLength *= -2;
+                    }
+                    returnVal = isUnicode ? Encoding.Unicode.GetString(allBytes, currentOffset, trueStringLength) :
+                                            Encoding.UTF8.GetString(allBytes, currentOffset, trueStringLength);
+                    break;
+                default:
+                    throw new ArgumentException($"Cannot parse row key of type {propertyType}");
+            }
+            return returnVal;
         }
 
         public static UEDataTableObject ParseSingleDataObject(Dictionary<int, string> uassetStrings, byte[] allBytes, ref int currentOffset)

@@ -12,6 +12,7 @@ namespace DataEditorUE4.Utilities
         public const int UexpListStartOffset = 0x2d;
         public const int AssetUexpEntryCountOffset = 0x2d;
         public const int AssetUexpListStartOffset = 0x31;
+        public const int AssetKeyPropertyTypeOffset = 0x18;
         public const string ArrayPropertyString = "ArrayProperty";
         public const string BoolPropertyString = "BoolProperty";
         public const string BytePropertyString = "ByteProperty";

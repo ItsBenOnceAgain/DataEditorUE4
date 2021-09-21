@@ -32,11 +32,11 @@ namespace DataEditorUE4.Utilities
             {
                 if (table.IsAsset)
                 {
-                    bytesToWrite.AddRange(BitConverter.GetBytes(int.Parse(row.Key)));
+                    bytesToWrite.AddRange(GetSimpleBytesFromValue(row.Key.DataType, row.Key.KeyData, uassetStrings, uassetWritePath));
                 }
                 else
                 {
-                    bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix(row.Key, ref uassetStrings, uassetWritePath, uassetWritePath));
+                    bytesToWrite.AddRange(CommonUtilities.GetBytesFromStringWithPossibleSuffix((string)row.Key.KeyData, ref uassetStrings, uassetWritePath, uassetWritePath));
                 }
                 
                 byte[] objectBytes = GetBytesFromObject(row.Value, uassetStrings, uassetWritePath);
@@ -88,44 +88,7 @@ namespace DataEditorUE4.Utilities
             foreach(var cell in dataObject.Cells)
             {
                 bytes.AddRange(cell.HeaderBytes);
-                switch (cell.Column.ColumnType)
-                {
-                    case UE4PropertyType.ArrayProperty:
-                        bytes.AddRange(GetInternalBytesFromArrayCell(cell, uassetStrings, uassetPath));
-                        break;
-                    case UE4PropertyType.BoolProperty:
-                        bytes.AddRange(GetInternalBytesFromBoolCell(cell));
-                        break;
-                    case UE4PropertyType.ByteProperty:
-                        bytes.AddRange(GetInternalBytesFromByteCell(cell));
-                        break;
-                    case UE4PropertyType.EnumProperty:
-                    case UE4PropertyType.NameProperty:
-                        bytes.AddRange(GetInternalBytesFromEnumNameCell(cell, uassetStrings, uassetPath));
-                        break;
-                    case UE4PropertyType.FloatProperty:
-                        bytes.AddRange(GetInternalBytesFromFloatCell(cell));
-                        break;
-                    case UE4PropertyType.IntProperty:
-                    case UE4PropertyType.ObjectProperty:
-                        bytes.AddRange(GetInternalBytesFromIntCell(cell));
-                        break;
-                    case UE4PropertyType.UInt32Property:
-                        bytes.AddRange(GetInternalBytesFromUInt32Cell(cell));
-                        break;
-                    case UE4PropertyType.SoftObjectProperty:
-                        bytes.AddRange(GetInternalBytesFromSoftObjectCell(cell, uassetStrings, uassetPath));
-                        break;
-                    case UE4PropertyType.StrProperty:
-                        bytes.AddRange(GetInternalBytesFromStringCell(cell));
-                        break;
-                    case UE4PropertyType.StructProperty:
-                        bytes.AddRange(GetBytesFromObject(cell.Value, uassetStrings, uassetPath));
-                        break;
-                    case UE4PropertyType.TextProperty:
-                        bytes.AddRange(GetInternalBytesFromTextCell(cell));
-                        break;
-                }
+                bytes.AddRange(GetInternalBytesFromCell(cell, uassetStrings, uassetPath));
             }
             return bytes.ToArray();
         }
@@ -278,6 +241,91 @@ namespace DataEditorUE4.Utilities
                     textBytes.AddRange(cell.TextIsUnicode ? Encoding.Unicode.GetBytes(cellText) : Encoding.UTF8.GetBytes(cellText));
                 }
                 bytes.AddRange(textBytes);
+            }
+            return bytes.ToArray();
+        }
+
+        public static byte[] GetInternalBytesFromCell(UEDataTableCell cell, Dictionary<int, string> uassetStrings, string uassetPath)
+        {
+            byte[] bytes = null;
+            switch (cell.Column.ColumnType)
+            {
+                case UE4PropertyType.ArrayProperty:
+                    bytes = GetInternalBytesFromArrayCell(cell, uassetStrings, uassetPath);
+                    break;
+                case UE4PropertyType.BoolProperty:
+                    bytes = GetInternalBytesFromBoolCell(cell);
+                    break;
+                case UE4PropertyType.ByteProperty:
+                    bytes = GetInternalBytesFromByteCell(cell);
+                    break;
+                case UE4PropertyType.EnumProperty:
+                case UE4PropertyType.NameProperty:
+                    bytes = GetInternalBytesFromEnumNameCell(cell, uassetStrings, uassetPath);
+                    break;
+                case UE4PropertyType.FloatProperty:
+                    bytes = GetInternalBytesFromFloatCell(cell);
+                    break;
+                case UE4PropertyType.IntProperty:
+                case UE4PropertyType.ObjectProperty:
+                    bytes = GetInternalBytesFromIntCell(cell);
+                    break;
+                case UE4PropertyType.UInt32Property:
+                    bytes = GetInternalBytesFromUInt32Cell(cell);
+                    break;
+                case UE4PropertyType.SoftObjectProperty:
+                    bytes = GetInternalBytesFromSoftObjectCell(cell, uassetStrings, uassetPath);
+                    break;
+                case UE4PropertyType.StrProperty:
+                    bytes = GetInternalBytesFromStringCell(cell);
+                    break;
+                case UE4PropertyType.StructProperty:
+                    bytes = GetBytesFromObject(cell.Value, uassetStrings, uassetPath);
+                    break;
+                case UE4PropertyType.TextProperty:
+                    bytes = GetInternalBytesFromTextCell(cell);
+                    break;
+            }
+            return bytes;
+        }
+
+        public static byte[] GetSimpleBytesFromValue(UE4PropertyType propertyType, dynamic value, Dictionary<int, string> uassetStrings, string uassetPath)
+        {
+            byte[] bytes = null;
+            switch (propertyType)
+            {
+                case UE4PropertyType.EnumProperty:
+                case UE4PropertyType.NameProperty:
+                    bytes = CommonUtilities.GetBytesFromStringWithPossibleSuffix(value, ref uassetStrings, uassetPath, uassetPath);
+                    break;
+                case UE4PropertyType.IntProperty:
+                case UE4PropertyType.ObjectProperty:
+                    bytes = BitConverter.GetBytes(int.Parse(((object)value).ToString()));
+                    break;
+                case UE4PropertyType.UInt32Property:
+                    bytes = BitConverter.GetBytes(uint.Parse(((object)value).ToString()));
+                    break;
+                case UE4PropertyType.StrProperty:
+                    bytes = GetSimpleBytesFromString(value);
+                    break;
+            }
+            return bytes;
+        }
+
+        public static byte[] GetSimpleBytesFromString(string value)
+        {
+            List<byte> bytes = new List<byte>();
+            string cellString = value;
+            int stringLength = cellString.Length;
+            cellString = cellString.Trim('\0') + "\0";
+            bool textIsUnicode = cellString.Any(c => c > MAX_ASCII_CODE);
+            if (textIsUnicode)
+            {
+                stringLength *= -1;
+            }
+            if (stringLength != 0)
+            {
+                bytes.AddRange(textIsUnicode ? Encoding.Unicode.GetBytes(cellString) : Encoding.UTF8.GetBytes(cellString));
             }
             return bytes.ToArray();
         }
